@@ -1,0 +1,256 @@
+let recievedNumber = 0
+let ownChannel = 1
+let sendFeedback = false
+let channel = 1
+let changeChannel = 0
+let switchRightFeedBack = 0
+let switchLeftFeedBack = 0
+let sendButtonPressed = 0
+pins.A3.setPull(PinPullMode.PullDown)
+pins.A2.setPull(PinPullMode.PullDown)
+crickit.setPixelColor(color.rgb(0, 0, 0))
+
+
+/* Lijst van signalen:
+1 = verzender zend signaal 1
+2 = verzender zend signaal 2
+3 = verzender zend signaal 3
+11 = ontvanger zendt signaal 1 naar verzender als verbinding
+22 = ontvanger zendt signaal 2 naar verzender als verbinding
+33 = ontvanger zendt signaal 3 naar verzender als verbinding
+4 = ontvanger zendt signaal 1 naar verzender als confirmatie
+5 = ontvanger zendt signaal 1 naar verzender als confirmatie
+6 = ontvanger zendt signaal 1 naar verzender als confirmatie
+*/
+
+// Hier die code die de ontvanger uit moet voeren.
+function recieverCode() {
+    console.log(`Opdracht ontvangen & code uitgevoerd.`)
+    // Hier de code die de ontvanger uitvoert.
+}
+
+// Switch feedback
+loops.forever(function () {
+    if (input.switchRight()) {
+        switchRightFeedBack++
+        switchLeftFeedBack = 0
+        if (switchRightFeedBack === 1) {
+            light.showRing("red orange red orange red orange red orange red orange")
+            console.log(`Playground staat nu in de ontvanger modus.`)
+            music.jumpUp.playUntilDone()
+            light.setAll(0)
+            crickit.setPixelColor(color.rgb(0, 0, 0))
+        }
+    } else {
+        switchRightFeedBack = 0
+        switchLeftFeedBack++
+        if (switchLeftFeedBack === 1) {
+            light.showRing("blue purple blue purple blue purple blue purple blue purple")
+            console.log(`Playground staat nu in de verzender modus.`)
+            music.jumpDown.playUntilDone()
+            light.setAll(0)
+            crickit.setPixelColor(color.rgb(0, 0, 0))
+        }
+    }
+})
+
+//Knopje B triggert ook de code
+input.buttonB.onEvent(ButtonEvent.Click, function () {
+    if (input.switchRight()) {
+        sendFeedback = true
+        crickit.setPixelColor(color.rgb(255, 255, 0))
+        recieverCode()
+        sendFeedback = false
+    }
+})
+
+
+//Ontvanger code, ontvanger heeft de switch naar rechts
+input.buttonA.onEvent(ButtonEvent.Click, function () {
+    if (input.switchRight()) {
+        ownChannel++
+    }
+})
+
+// Deze code hoort bovenaan
+loops.forever(function () {
+    if (sendFeedback == false && input.switchRight()) {
+        if (ownChannel >= 4) {
+            ownChannel = 1
+        }
+        if (ownChannel === 1) {
+            crickit.setPixelColor(color.rgb(255, 0, 0))
+        }
+        if (ownChannel === 2) {
+            crickit.setPixelColor(color.rgb(0, 255, 0))
+        }
+        if (ownChannel === 3) {
+            crickit.setPixelColor(color.rgb(0, 0, 255))
+        }
+    }
+})
+
+// send feedback
+loops.forever(function () {
+    if (sendFeedback == false && input.switchRight()) {
+        if (ownChannel === 1) {
+            network.infraredSendNumber(11)
+        }
+        if (ownChannel === 2) {
+            network.infraredSendNumber(22)
+        }
+        if (ownChannel === 3) {
+            network.infraredSendNumber(33)
+        }
+    }
+})
+
+// network.onInfraredReceivedNumber kan maar een keer gebruikt worden.
+network.onInfraredReceivedNumber(function (num) {
+    if (ownChannel == 1 && input.switchRight()) {
+        if (num == 1) {
+            sendFeedback = true
+            network.infraredSendNumber(4)
+            crickit.setPixelColor(color.rgb(255, 255, 0))
+            recieverCode()
+            pause(100)
+            sendFeedback = false
+        }
+    }
+    if (ownChannel == 2 && input.switchRight()) {
+        if (num == 2) {
+            sendFeedback = true
+            network.infraredSendNumber(5)
+            crickit.setPixelColor(color.rgb(255, 255, 0))
+            recieverCode()
+            pause(100)
+            sendFeedback = false
+        }
+    }
+    if (ownChannel === 3 && input.switchRight()) {
+        if (num === 3) {
+            console.log(`nummer 3 ontvangen`)
+            sendFeedback = true
+            network.infraredSendNumber(6)
+            crickit.setPixelColor(color.rgb(255, 255, 0))
+            recieverCode()
+            pause(100)
+            sendFeedback = false
+        }
+    }
+
+    //Verzender code, verzender heeft de switch naar links
+
+    if (channel == 1 && input.switchRight() == false) {
+        if (num == 11) {
+            pins.A6.digitalWrite(true)
+            console.log(`Connectie met ander apparaat op kanaal 1`)
+            pause(10)
+            pins.A6.digitalWrite(false)
+        }
+    }
+    if (channel == 2 && input.switchRight() == false) {
+        if (num == 22) {
+            pins.A6.digitalWrite(true)
+            console.log(`Connectie met ander apparaat op kanaal 2`)
+            pause(10)
+            pins.A6.digitalWrite(false)
+        }
+    }
+    if (channel == 3 && input.switchRight() == false) {
+        if (num == 33) {
+            pins.A6.digitalWrite(true)
+            console.log(`Connectie met ander apparaat op kanaal 3`)
+            pause(10)
+            pins.A6.digitalWrite(false)
+        }
+    }
+    // Ontvangst lampje
+    if (channel == 1 && input.switchRight() == false) {
+        if (num == 4) {
+            pins.A7.digitalWrite(true)
+            console.log(`Apparaat op kanaal 1 heeft ontvangst geconfirmd.`)
+            pause(100)
+            pins.A7.digitalWrite(false)
+        }
+    }
+    if (channel == 2 && input.switchRight() == false) {
+        if (num == 5) {
+            pins.A7.digitalWrite(true)
+            console.log(`Apparaat op kanaal 2 heeft ontvangst geconfirmd.`)
+            pause(100)
+            pins.A7.digitalWrite(false)
+        }
+    }
+    if (channel == 3 && input.switchRight() == false) {
+        if (num == 6) {
+            pins.A7.digitalWrite(true)
+            console.log(`Apparaat op kanaal 3 heeft ontvangst geconfirmd.`)
+            pause(100)
+            pins.A7.digitalWrite(false)
+        }
+    }
+
+})
+
+// Knopje om van channel te veranderen
+loops.forever(function () {
+    if (input.switchRight() == false) {
+        if (pins.A2.digitalRead()) {
+            changeChannel++
+        } else {
+            changeChannel = 0
+        }
+    }
+    if (changeChannel === 2 && input.switchRight() == false) {
+        channel++
+        if (channel >= 4 || channel <= 0) {
+            channel = 1
+        }
+        console.log(`Kanaal veranderd naar apparaat ${channel}`)
+    }
+})
+
+// Servo laat zien welk kanaal geselecteerd is
+loops.forever(function () {
+    if (channel === 1 && input.switchRight() == false) {
+        crickit.servo1.setAngle(180)
+    }
+    if (channel === 2 && input.switchRight() == false) {
+        crickit.servo1.setAngle(90)
+    }
+    if (channel === 3 && input.switchRight() == false) {
+        crickit.servo1.setAngle(0)
+    }
+})
+
+//ALs het verzendt knopje ingedrukt word moet hij maar een keer code esecuten.
+loops.forever(function () {
+    if (pins.A3.digitalRead() && input.switchRight() == false) {
+        sendButtonPressed++
+    } else {
+        sendButtonPressed = 0
+    }
+})
+
+
+// Knopje om de afstandbediening te triggeren
+loops.forever(function () {
+    if (sendButtonPressed === 1 && input.switchRight() == false) {
+        if (channel === 1) {
+            light.setAll(color.rgb(255, 0, 0))
+            network.infraredSendNumber(1)
+            light.clear()
+        }
+        if (channel === 2) {
+            light.setAll(color.rgb(0, 255, 0))
+            network.infraredSendNumber(2)
+            light.clear()
+        }
+        if (channel === 3) {
+            light.setAll(color.rgb(0, 0, 255))
+            network.infraredSendNumber(3)
+            light.clear()
+        }
+    }
+})
